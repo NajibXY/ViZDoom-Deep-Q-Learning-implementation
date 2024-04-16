@@ -66,7 +66,7 @@ class QNN(nn.Module):
 
         self.criterion = nn.MSELoss()
         self.optimizer = torch.optim.SGD(self.parameters(), FLAGS.learning_rate)
-        self.memory = ReplayMemory(capacity=FLAGS.replay_memory)
+        self.memory = ReplayMemory(replay_capacity=FLAGS.replay_memory)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
