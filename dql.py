@@ -90,3 +90,11 @@ class QNN(nn.Module):
         target_q[idxs] = r + FLAGS.discount * (1-isfinal) * q2
         self.train_step(state1, target_q)
 
+# Agent performing actions
+
+def preprocess(img):
+    return torch.from_numpy(resize(img, resolution).astype(np.float32))
+
+def game_state(game):
+    return preprocess(game.get_state().screen_buffer)
+
