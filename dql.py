@@ -1,4 +1,4 @@
-from vizdoom import *
+from vizdoom import DoomGame, Mode, ScreenFormat, ScreenResolution
 
 import numpy as np
 from random import randint, random, sample
@@ -12,9 +12,12 @@ from skimage.transform import resize
 config_path = "basic.cfg"
 torch_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# Replay Memory
+# Game params
 
 resolution = (30, 45)
+frame_repeat = 12
+
+# Replay Memory
 
 class ReplayMemory:
     def __init__(self, replay_capacity):
@@ -46,6 +49,7 @@ class ReplayMemory:
         return (self.state1[ind], self.act[ind], self.state2[ind], self.isfinal[ind], self.rew[ind])
 
 # DNN Model
+
 FLAGS = flags.FLAGS
 class QNN(nn.Module):
     def __init__(self, available_actions_count):
@@ -90,11 +94,54 @@ class QNN(nn.Module):
         target_q[idxs] = r + FLAGS.discount * (1-isfinal) * q2
         self.train_step(state1, target_q)
 
-# Agent performing actions
+# Processing game state
 
 def preprocess(img):
     return torch.from_numpy(resize(img, resolution).astype(np.float32))
 
 def game_state(game):
     return preprocess(game.get_state().screen_buffer)
+
+def init_vizdoom(config):
+    game = DoomGame()
+    game.load_config(config)
+    game.set_window_visible(True)
+    game.set_mode(Mode.PLAYER)
+    game.set_screen_format(ScreenFormat.GRAY8)
+    game.set_screen_resolution(ScreenResolution.RES_640X480)
+    game.init()
+    return game
+
+# Agent performing actions
+
+def find_eps(epoch):
+    start, end = 1.0, 0.1
+    const_epochs, decay_epochs = .1*FLAGS.epochs, .6*FLAGS.epochs
+    if epoch < const_epochs:
+        return start
+    elif epoch > decay_epochs:
+        return end
+    # Apply linear decay between const and decay epochs
+    progress = (epoch-const_epochs)/(decay_epochs-const_epochs)
+    return start - progress * (start - end)
+
+def perform_action(epoch, game, model, actions):
+    state1 = game_state(game)
+    if random() <= find_eps(epoch):
+        action = torch.tensor(randint(0, len(actions) - 1)).long()
+    else:
+        state1 = state1.reshape([1, 1, *resolution])
+        action = model.get_best_action(state1.to(torch_device))
+    reward = game.make_action(actions[action], frame_repeat)
+
+    if game.is_episode_finished():
+        isfinal, state2 = 1., None
+    else:
+        isfinal = 0.
+        state2 = game_state(game)
+
+    model.memory.transition(state1, action, state2, isfinal, reward)
+    model.learn_from_memory()
+
+# Agent training
 
