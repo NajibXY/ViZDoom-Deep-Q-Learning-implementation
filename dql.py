@@ -6,8 +6,12 @@ from random import randint, random, sample
 import torch
 from torch import nn
 import torch.nn.functional as F
-from absl import flags
+from absl import app,flags
 from skimage.transform import resize
+
+from time import time, sleep
+from tqdm import trange
+import itertools
 
 config_path = "basic.cfg"
 torch_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -105,12 +109,29 @@ def game_state(game):
 def init_vizdoom(config):
     game = DoomGame()
     game.load_config(config)
-    game.set_window_visible(True)
+    game.set_window_visible(False)
     game.set_mode(Mode.PLAYER)
     game.set_screen_format(ScreenFormat.GRAY8)
     game.set_screen_resolution(ScreenResolution.RES_640X480)
     game.init()
     return game
+
+def watch_episodes(game, model, actions):
+    game.set_window_visible(True)
+    game.set_mode(Mode.ASYNC_PLAYER)
+    game.init()
+    for episode in range(FLAGS.watch_episodes):
+        game.new_episode(f'episode-{episode}')
+        while not game.is_episode_finished():
+            state = game_state(game)
+            state = state.reshape([1, 1, resolution[0], resolution[1]])
+            a_idx = model.get_best_action(state.to(torch_device))
+            game.set_action(actions[a_idx])
+            for _ in range(frame_repeat):
+                game.advance_action()
+        sleep(1.0)
+        score = game.get_total_reward()
+        print(f'Total score: {score}')
 
 # Agent performing actions
 
@@ -145,3 +166,76 @@ def perform_action(epoch, game, model, actions):
 
 # Agent training
 
+def train(game, model, actions):
+    time_start = time()
+    print("Saving the network weigths to:", FLAGS.save_path)
+    for epoch in range(FLAGS.epochs):
+        print(f'Epoch {epoch+1}')
+        episodes_finished = 0
+        scores = np.array([])
+        game.new_episode()
+        for _ in trange(FLAGS.iters, leave=False):
+            perform_action(epoch, game, model, actions)
+            if game.is_episode_finished():
+                score = game.get_total_reward()
+                scores = np.append(scores, score)
+                game.new_episode()
+                episodes_finished += 1
+        print(f'Completed {episodes_finished} episodes')
+        print(f'Mean: {scores.mean():.1f} +/- {scores.std():.1f}')
+        print("Testing...")
+        test(FLAGS.test_episodes, game, model, actions)
+        torch.save(model, FLAGS.save_path)
+    print(f'Total elapsed time: {(time()-time_start):.2f} minutes')
+
+def test(iters, game, model, actions):
+    scores = np.array([])
+    for _ in trange(FLAGS.test_episodes, leave=False):
+        game.new_episode()
+        while not game.is_episode_finished():
+            state = game_state(game)
+            state = state.reshape([1, 1, resolution[0], resolution[1]])
+            a_idx = model.get_best_action(state.to(torch_device))
+            game.make_action(actions[a_idx], frame_repeat)
+        r = game.get_total_reward()
+        scores = np.append(scores, r)
+    print(f'Results: mean: {scores.mean():.1f} +/- {scores.std():.1f}')
+
+
+def main(_):
+    game = init_vizdoom(FLAGS.config)
+
+    n = game.get_available_buttons_size()
+    actions = [list(a) for a in itertools.product([0, 1], repeat=n)]
+
+    if FLAGS.load_model:
+        print(f'Model loaded from: {FLAGS.save_path}')
+        model = torch.load(FLAGS.save_path).to(torch_device)
+    else:
+        model = QNN(len(actions)).to(torch_device)
+
+    print("Training started!")
+    if not FLAGS.skip_training:
+        train(game, model, actions)
+
+    game.close()
+    print("Training finished!")
+    print("======================================")
+    watch_episodes(game, model, actions)
+
+if __name__ == '__main__':
+    flags.DEFINE_integer('batch_size', 64, 'Batch size')
+    flags.DEFINE_float('learning_rate', 0.00025, 'Learning rate')
+    flags.DEFINE_float('discount', 0.99, 'Discount factor')
+    flags.DEFINE_integer('replay_memory', 10000, 'Replay memory capacity')
+    flags.DEFINE_integer('epochs', 20, 'Number of epochs')
+    flags.DEFINE_integer('iters', 2000, 'Iterations per epoch')
+    flags.DEFINE_integer('watch_episodes', 10, 'Trained episodes to watch')
+    flags.DEFINE_integer('test_episodes', 100, 'Episodes to test with')
+    flags.DEFINE_string('config', config_path,
+                        'Path to the config file')
+    flags.DEFINE_boolean('skip_training', False, 'Set to skip training')
+    flags.DEFINE_boolean('load_model', False, 'Load the model from disk')
+    flags.DEFINE_string('save_path', 'model-doom.pth',
+                        'Path to save/load the model')
+    app.run(main)
