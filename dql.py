@@ -109,7 +109,8 @@ def game_state(game):
 def init_vizdoom(config):
     game = DoomGame()
     game.load_config(config)
-    game.set_window_visible(False)
+    # Set to true to see window during training
+    game.set_window_visible(True)
     game.set_mode(Mode.PLAYER)
     game.set_screen_format(ScreenFormat.GRAY8)
     game.set_screen_resolution(ScreenResolution.RES_640X480)
@@ -170,7 +171,7 @@ def train(game, model, actions):
     time_start = time()
     print("Saving the network weigths to:", FLAGS.save_path)
     for epoch in range(FLAGS.epochs):
-        print(f'Epoch {epoch+1}')
+        print(f'------------- Epoch {epoch+1}')
         episodes_finished = 0
         scores = np.array([])
         game.new_episode()
@@ -181,12 +182,12 @@ def train(game, model, actions):
                 scores = np.append(scores, score)
                 game.new_episode()
                 episodes_finished += 1
-        print(f'Completed {episodes_finished} episodes')
-        print(f'Mean: {scores.mean():.1f} +/- {scores.std():.1f}')
-        print("Testing...")
+        print(f'--- Completed {episodes_finished} episodes')
+        print(f'--- Mean: {scores.mean():.1f} +/- {scores.std():.1f}')
+        print("------ Testing...")
         test(FLAGS.test_episodes, game, model, actions)
         torch.save(model, FLAGS.save_path)
-    print(f'Total elapsed time: {(time()-time_start):.2f} minutes')
+    print(f'Total elapsed time: {(time()-time_start)/60:.2f} minutes')
 
 def test(iters, game, model, actions):
     scores = np.array([])
@@ -199,7 +200,7 @@ def test(iters, game, model, actions):
             game.make_action(actions[a_idx], frame_repeat)
         r = game.get_total_reward()
         scores = np.append(scores, r)
-    print(f'Results: mean: {scores.mean():.1f} +/- {scores.std():.1f}')
+    print(f'--- Results: mean: {scores.mean():.1f} +/- {scores.std():.1f}')
 
 
 def main(_):
@@ -234,6 +235,7 @@ if __name__ == '__main__':
     flags.DEFINE_integer('test_episodes', 100, 'Episodes to test with')
     flags.DEFINE_string('config', config_path,
                         'Path to the config file')
+    # Set both to True to skip training and use the lastly trained model
     flags.DEFINE_boolean('skip_training', False, 'Set to skip training')
     flags.DEFINE_boolean('load_model', False, 'Load the model from disk')
     flags.DEFINE_string('save_path', 'model-doom.pth',
