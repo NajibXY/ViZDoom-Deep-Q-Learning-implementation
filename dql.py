@@ -13,7 +13,6 @@ from time import time, sleep
 from tqdm import trange
 import itertools
 
-config_path = "basic.cfg"
 torch_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Game params
@@ -66,7 +65,7 @@ class QNN(nn.Module):
 
         self.criterion = nn.MSELoss()
         self.optimizer = torch.optim.SGD(self.parameters(), FLAGS.learning_rate)
-        self.memory = ReplayMemory(replay_capacity=FLAGS.replay_memory)
+        self.memory = ReplayMemory(replay_capacity=FLAGS.replay_memory_size)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
@@ -95,7 +94,7 @@ class QNN(nn.Module):
         q2, _ = torch.max(q, dim=1)
         target_q = self(state1).detach()
         idxs = (torch.arange(target_q.shape[0]), act)
-        target_q[idxs] = r + FLAGS.discount * (1-isfinal) * q2
+        target_q[idxs] = r + FLAGS.discount_factor * (1-isfinal) * q2
         self.train_step(state1, target_q)
 
 # Processing game state
@@ -121,7 +120,7 @@ def watch_episodes(game, model, actions):
     game.set_window_visible(True)
     game.set_mode(Mode.ASYNC_PLAYER)
     game.init()
-    for episode in range(FLAGS.watch_episodes):
+    for episode in range(FLAGS.episodes_to_watch):
         game.new_episode(f'episode-{episode}')
         while not game.is_episode_finished():
             state = game_state(game)
@@ -175,7 +174,7 @@ def train(game, model, actions):
         episodes_finished = 0
         scores = np.array([])
         game.new_episode()
-        for _ in trange(FLAGS.iters, leave=False):
+        for _ in trange(FLAGS.iters_per_epoch, leave=False):
             perform_action(epoch, game, model, actions)
             if game.is_episode_finished():
                 score = game.get_total_reward()
@@ -226,18 +225,16 @@ def main(_):
 
 if __name__ == '__main__':
     flags.DEFINE_integer('batch_size', 64, 'Batch size')
-    flags.DEFINE_float('learning_rate', 0.00025, 'Learning rate')
-    flags.DEFINE_float('discount', 0.99, 'Discount factor')
-    flags.DEFINE_integer('replay_memory', 10000, 'Replay memory capacity')
+    flags.DEFINE_integer('replay_memory_size', 10000, 'Replay memory capacity')
+    flags.DEFINE_integer('iters_per_epoch', 2000, 'Iterations per epoch')
     flags.DEFINE_integer('epochs', 20, 'Number of epochs')
-    flags.DEFINE_integer('iters', 2000, 'Iterations per epoch')
-    flags.DEFINE_integer('watch_episodes', 10, 'Trained episodes to watch')
     flags.DEFINE_integer('test_episodes', 100, 'Episodes to test with')
-    flags.DEFINE_string('config', config_path,
-                        'Path to the config file')
+    flags.DEFINE_float('learning_rate', 0.00025, 'Learning rate')
+    flags.DEFINE_float('discount_factor', 0.99, 'Discount factor')
+    flags.DEFINE_integer('episodes_to_watch', 10, 'Trained episodes to watch')
     # Set both to True to skip training and use the lastly trained model
     flags.DEFINE_boolean('skip_training', False, 'Set to skip training')
-    flags.DEFINE_boolean('load_model', False, 'Load the model from disk')
-    flags.DEFINE_string('save_path', 'model-doom.pth',
-                        'Path to save/load the model')
+    flags.DEFINE_boolean('load_model', False, 'Load the trained model')
+    flags.DEFINE_string('save_path', 'saved_model_doom.pth','Path for the trained model')
+    flags.DEFINE_string('config', 'basic.cfg', 'Path to the doom config file')
     app.run(main)
