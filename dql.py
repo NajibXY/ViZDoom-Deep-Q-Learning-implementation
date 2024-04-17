@@ -1,22 +1,16 @@
 from vizdoom import DoomGame, Mode, ScreenFormat, ScreenResolution
-
-import numpy as np
-from random import randint, random, sample
-
-import torch
-from torch import nn
-import torch.nn.functional as F
 from absl import app,flags
 from skimage.transform import resize
-
+from torch import nn
+from random import randint, random, sample
 from time import time, sleep
 from tqdm import trange
+import numpy as np
+import torch
+import torch.nn.functional as F
 import itertools
 
 torch_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-# Game params
-
 resolution = (30, 45)
 frame_repeat = 12
 
@@ -43,7 +37,6 @@ class ReplayMemory:
             self.state2[ind,0,:,:] = state2
         self.isfinal[ind] = isfinal
         self.rew[ind] = reward
-
         self.position = (self.position + 1) % self.replay_capacity
         self.size = min(self.size + 1, self.replay_capacity)
 
@@ -203,6 +196,7 @@ def test(iters, game, model, actions):
 
 
 def main(_):
+    print("Cuda available ? : ", torch.cuda.is_available())
     game = init_vizdoom(FLAGS.config)
 
     n = game.get_available_buttons_size()
@@ -224,17 +218,39 @@ def main(_):
     watch_episodes(game, model, actions)
 
 if __name__ == '__main__':
+# 16/04/2024
+    # flags.DEFINE_integer('batch_size', 64, 'Batch size')
+    # flags.DEFINE_integer('replay_memory_size', 10000, 'Replay memory capacity')
+    # flags.DEFINE_integer('iters_per_epoch', 2000, 'Iterations per epoch')
+    # flags.DEFINE_integer('epochs', 20, 'Number of epochs')
+    # flags.DEFINE_integer('test_episodes', 100, 'Episodes to test with')
+    # flags.DEFINE_float('learning_rate', 0.00025, 'Learning rate')
+    # flags.DEFINE_float('discount_factor', 0.99, 'Discount factor')
+    # flags.DEFINE_integer('episodes_to_watch', 10, 'Trained episodes to watch')
+# 17/04/2024
+    # flags.DEFINE_integer('batch_size', 64, 'Batch size')
+    # flags.DEFINE_integer('replay_memory_size', 10000, 'Replay memory capacity')
+    # flags.DEFINE_integer('iters_per_epoch', 1000, 'Iterations per epoch')
+    # flags.DEFINE_integer('epochs', 10, 'Number of epochs')
+    # flags.DEFINE_integer('test_episodes', 50, 'Episodes to test with')
+    # flags.DEFINE_float('learning_rate', 0.001, 'Learning rate')
+    # flags.DEFINE_float('discount_factor', 0.99, 'Discount factor')
+# 17/04/2024 2
     flags.DEFINE_integer('batch_size', 64, 'Batch size')
-    flags.DEFINE_integer('replay_memory_size', 10000, 'Replay memory capacity')
-    flags.DEFINE_integer('iters_per_epoch', 2000, 'Iterations per epoch')
-    flags.DEFINE_integer('epochs', 20, 'Number of epochs')
+    flags.DEFINE_integer('replay_memory_size', 30000, 'Replay memory capacity')
+    flags.DEFINE_integer('iters_per_epoch', 3000, 'Iterations per epoch')
+    flags.DEFINE_integer('epochs', 30, 'Number of epochs')
     flags.DEFINE_integer('test_episodes', 100, 'Episodes to test with')
     flags.DEFINE_float('learning_rate', 0.00025, 'Learning rate')
     flags.DEFINE_float('discount_factor', 0.99, 'Discount factor')
-    flags.DEFINE_integer('episodes_to_watch', 10, 'Trained episodes to watch')
+    
     # Set both to True to skip training and use the lastly trained model
+    # flags.DEFINE_boolean('skip_training', False, 'Set to skip training')
+    # flags.DEFINE_boolean('load_model', False, 'Load the trained model')
+    flags.DEFINE_integer('episodes_to_watch', 20, 'Trained episodes to watch')
     flags.DEFINE_boolean('skip_training', False, 'Set to skip training')
     flags.DEFINE_boolean('load_model', False, 'Load the trained model')
     flags.DEFINE_string('save_path', 'saved_model_doom.pth','Path for the trained model')
-    flags.DEFINE_string('config', 'basic.cfg', 'Path to the doom config file')
+    # flags.DEFINE_string('config', 'basic.cfg', 'Path to the doom config file')
+    flags.DEFINE_string('config', 'deadly_corridor.cfg', 'Path to the doom config file')
     app.run(main)
