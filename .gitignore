@@ -1,2 +1,6 @@
 *.exe
 dist/*
+archive/*
+*.lmp
+*.pth
+test.py
