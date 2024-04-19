@@ -1,3 +1,6 @@
+# Code adapted from the works of FARAMA-FOUNDATION https://github.com/Farama-Foundation/ViZDoom/blob/master/examples/python/learning_pytorch.py
+# And Brandon Morris https://brandonmorris.dev/2018/10/09/dql-vizdoom/
+
 from vizdoom import DoomGame, Mode, ScreenFormat, ScreenResolution
 from absl import app,flags
 from skimage.transform import resize
