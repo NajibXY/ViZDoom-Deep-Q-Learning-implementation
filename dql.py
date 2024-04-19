@@ -13,6 +13,9 @@ import itertools
 torch_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 resolution = (30, 45)
 frame_repeat = 12
+basic_config = 'basic.cfg'
+deadly_corridor_config = 'deadly_corridor.cfg'
+defend_the_center_config = 'defend_the_center.cfg'
 
 # Replay Memory
 
@@ -218,15 +221,25 @@ def main(_):
     watch_episodes(game, model, actions)
 
 if __name__ == '__main__':
+######################################### Model, config, save and watch parameters ########################################
+    # Set both to True to skip training and use the lastly trained model
+    # flags.DEFINE_boolean('skip_training', False, 'Set to skip training')
+    # flags.DEFINE_boolean('load_model', False, 'Load the trained model')
+    flags.DEFINE_integer('episodes_to_watch', 20, 'Trained episodes to watch')
+    flags.DEFINE_boolean('skip_training', False, 'Set to skip training')
+    flags.DEFINE_boolean('load_model', False, 'Load the trained model')
+    flags.DEFINE_string('save_path', 'saved_model_doom.pth','Path for the trained model')
+    flags.DEFINE_string('config', defend_the_center_config, 'Path to the doom config file')
+
+######################################## Training parameters ########################################
 # 16/04/2024
-    # flags.DEFINE_integer('batch_size', 64, 'Batch size')
-    # flags.DEFINE_integer('replay_memory_size', 10000, 'Replay memory capacity')
-    # flags.DEFINE_integer('iters_per_epoch', 2000, 'Iterations per epoch')
-    # flags.DEFINE_integer('epochs', 20, 'Number of epochs')
-    # flags.DEFINE_integer('test_episodes', 100, 'Episodes to test with')
-    # flags.DEFINE_float('learning_rate', 0.00025, 'Learning rate')
-    # flags.DEFINE_float('discount_factor', 0.99, 'Discount factor')
-    # flags.DEFINE_integer('episodes_to_watch', 10, 'Trained episodes to watch')
+    flags.DEFINE_integer('batch_size', 64, 'Batch size')
+    flags.DEFINE_integer('replay_memory_size', 10000, 'Replay memory capacity')
+    flags.DEFINE_integer('iters_per_epoch', 2000, 'Iterations per epoch')
+    flags.DEFINE_integer('epochs', 20, 'Number of epochs')
+    flags.DEFINE_integer('test_episodes', 100, 'Episodes to test with')
+    flags.DEFINE_float('learning_rate', 0.00025, 'Learning rate')
+    flags.DEFINE_float('discount_factor', 0.99, 'Discount factor')
 # 17/04/2024
     # flags.DEFINE_integer('batch_size', 64, 'Batch size')
     # flags.DEFINE_integer('replay_memory_size', 10000, 'Replay memory capacity')
@@ -236,21 +249,38 @@ if __name__ == '__main__':
     # flags.DEFINE_float('learning_rate', 0.001, 'Learning rate')
     # flags.DEFINE_float('discount_factor', 0.99, 'Discount factor')
 # 17/04/2024 2
-    flags.DEFINE_integer('batch_size', 64, 'Batch size')
-    flags.DEFINE_integer('replay_memory_size', 30000, 'Replay memory capacity')
-    flags.DEFINE_integer('iters_per_epoch', 3000, 'Iterations per epoch')
-    flags.DEFINE_integer('epochs', 30, 'Number of epochs')
-    flags.DEFINE_integer('test_episodes', 100, 'Episodes to test with')
-    flags.DEFINE_float('learning_rate', 0.00025, 'Learning rate')
-    flags.DEFINE_float('discount_factor', 0.99, 'Discount factor')
-    
-    # Set both to True to skip training and use the lastly trained model
-    # flags.DEFINE_boolean('skip_training', False, 'Set to skip training')
-    # flags.DEFINE_boolean('load_model', False, 'Load the trained model')
-    flags.DEFINE_integer('episodes_to_watch', 20, 'Trained episodes to watch')
-    flags.DEFINE_boolean('skip_training', False, 'Set to skip training')
-    flags.DEFINE_boolean('load_model', False, 'Load the trained model')
-    flags.DEFINE_string('save_path', 'saved_model_doom.pth','Path for the trained model')
-    # flags.DEFINE_string('config', 'basic.cfg', 'Path to the doom config file')
-    flags.DEFINE_string('config', 'deadly_corridor.cfg', 'Path to the doom config file')
+    # flags.DEFINE_integer('batch_size', 64, 'Batch size')
+    # flags.DEFINE_integer('replay_memory_size', 30000, 'Replay memory capacity')
+    # flags.DEFINE_integer('iters_per_epoch', 3000, 'Iterations per epoch')
+    # flags.DEFINE_integer('epochs', 30, 'Number of epochs')
+    # flags.DEFINE_integer('test_episodes', 100, 'Episodes to test with')
+    # flags.DEFINE_float('learning_rate', 0.00025, 'Learning rate')
+    # flags.DEFINE_float('discount_factor', 0.99, 'Discount factor')
+
+# 17 & 18/04/2024 : Tests on deadly_corridor
+    # flags.DEFINE_integer('batch_size', 64, 'Batch size')
+    # flags.DEFINE_integer('replay_memory_size', 100000, 'Replay memory capacity')
+    # flags.DEFINE_integer('iters_per_epoch', 10000, 'Iterations per epoch')
+    # flags.DEFINE_integer('epochs', 30, 'Number of epochs')
+    # flags.DEFINE_integer('test_episodes', 100, 'Episodes to test with')
+    # flags.DEFINE_float('learning_rate', 0.0001, 'Learning rate')
+    # flags.DEFINE_float('discount_factor', 0.99, 'Discount factor')
+
+    # flags.DEFINE_integer('batch_size', 64, 'Batch size')
+    # flags.DEFINE_integer('replay_memory_size', 10000, 'Replay memory capacity')
+    # flags.DEFINE_integer('iters_per_epoch', 2000, 'Iterations per epoch')
+    # flags.DEFINE_integer('epochs', 20, 'Number of epochs')
+    # flags.DEFINE_integer('test_episodes', 100, 'Episodes to test with')
+    # flags.DEFINE_float('learning_rate', 0.0005, 'Learning rate')
+    # flags.DEFINE_float('discount_factor', 0.99, 'Discount factor')
+
+# 18/04/2024 : Tests on defend_the_center
+    # flags.DEFINE_integer('batch_size', 64, 'Batch size')
+    # flags.DEFINE_integer('replay_memory_size', 30000, 'Replay memory capacity')
+    # flags.DEFINE_integer('iters_per_epoch', 3000, 'Iterations per epoch')
+    # flags.DEFINE_integer('epochs', 30, 'Number of epochs')
+    # flags.DEFINE_integer('test_episodes', 100, 'Episodes to test with')
+    # flags.DEFINE_float('learning_rate', 0.000125, 'Learning rate')
+    # flags.DEFINE_float('discount_factor', 0.99, 'Discount factor')
+
     app.run(main)
