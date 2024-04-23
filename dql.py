@@ -229,10 +229,11 @@ if __name__ == '__main__':
     # flags.DEFINE_boolean('skip_training', False, 'Set to skip training')
     # flags.DEFINE_boolean('load_model', False, 'Load the trained model')
     flags.DEFINE_integer('episodes_to_watch', 20, 'Trained episodes to watch')
-    flags.DEFINE_boolean('skip_training', False, 'Set to skip training')
-    flags.DEFINE_boolean('load_model', False, 'Load the trained model')
+    flags.DEFINE_boolean('skip_training', True, 'Set to skip training')
+    flags.DEFINE_boolean('load_model', True, 'Load the trained model')
     flags.DEFINE_string('save_path', 'saved_model_doom.pth','Path for the trained model')
-    flags.DEFINE_string('config', defend_the_center_config, 'Path to the doom config file')
+    flags.DEFINE_string('config', basic_config, 'Path to the doom config file')
+    # flags.DEFINE_string('config', defend_the_center_config, 'Path to the doom config file')
 
 ######################################## Training parameters ########################################
 # 16/04/2024
