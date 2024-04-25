@@ -5,6 +5,10 @@
 
 ## 1. Motivations
 
+<figure text-align="right">
+  <img align="right" src="https://github.com/NajibXY/ViZDoom-Deep-Q-Learning-implementation/blob/master/assets/basic_conf_fullscreen.gif" width="400">
+</figure>
+
 During my second year of CS Master Degree specializing in Artificial Intelligence, I had the opportunity to learn about a Python library providing training environments for learning agents: VizDoom. Therefore, as part of my experiments in April 2024, I decided to implement a deep reinforcement learning algorithm and test it on VizDoom environments.
 
 </br> </br>
@@ -74,7 +78,7 @@ During my second year of CS Master Degree specializing in Artificial Intelligenc
   
 + Example of a trained agent after 20 episodes of 2000 iterations on a `defend_the_center.cfg` environment 
 
-  <img src="https://github.com/NajibXY/ViZDoom-Deep-Q-Learning-implementation/blob/master/assets/defend_the_center.gif" width="350">
+  <img src="https://github.com/NajibXY/ViZDoom-Deep-Q-Learning-implementation/blob/master/assets/defend_the_center.gif" width="400">
   </br>
   - Here, the agent had more difficulty finding a reliably human strategy.
   </br>  
